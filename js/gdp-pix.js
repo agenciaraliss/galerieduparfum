@@ -31,7 +31,10 @@ for(i=0;i<cs.length;i++){c=cs[i];if(!/pix/i.test(c.textContent))continue;
 st=c.querySelector('.js-payment-method-discount strong');if(st){t=String(p).replace('.',',')+'% de desconto';if(st.textContent.trim()!==t)st.textContent=t}
 pw=c.querySelector('.js-price-with-discount');pe=document.querySelector('#price_display[data-product-price],.js-price-display[data-product-price]');
 if(pw){pw.setAttribute('data-payment-discount',String(p));if(pe){n=parseFloat(pe.getAttribute('data-product-price'));if(isFinite(n)&&n>0){t=brl(n*(100-p)/100);if(pw.textContent.trim()!==t)pw.textContent=t}}}}}
-function tudo(p){aplica(p);try{nativo(p)}catch(e){}}
+function extras(p){var t=String(p).replace('.',','),i,e,x;
+var a=document.querySelectorAll('.js-product-discount-container');for(i=0;i<a.length;i++){if(!/pix/i.test(a[i].textContent))continue;e=a[i].querySelector('.text-accent');if(e){x=t+'% de desconto';if(e.textContent.trim()!==x)e.textContent=x}}
+var b=document.querySelectorAll('.js-modal-tab-discount strong');for(i=0;i<b.length;i++){if(/^\s*\d+(?:[.,]\d+)?\s*%\s*OFF\s*$/i.test(b[i].textContent)){x=t+'% OFF';if(b[i].textContent.trim()!==x)b[i].textContent=x}}}
+function tudo(p){aplica(p);try{nativo(p)}catch(e){}try{extras(p)}catch(e){}}
 function run(force){try{obter(function(p){P=p;tudo(p)},force)}catch(e){}}
 var tm;try{new MutationObserver(function(){clearTimeout(tm);tm=setTimeout(function(){try{if(P!==null)tudo(P);else run()}catch(e){}},80)}).observe(document.body,{childList:true,subtree:true,characterData:true})}catch(e){}
 document.addEventListener('visibilitychange',function(){if(!document.hidden)run(true)});
