@@ -1,17 +1,18 @@
-/* PIX v3: o % vem da busca da loja (sem cache), que reflete o painel na hora */
+/* PIX v4 (leitura sem estilos, corrige Firefox) | v3: o % vem da busca da loja (sem cache), que reflete o painel na hora */
 (function(){
 if(window.__gdpPixDyn)return;window.__gdpPixDyn=1;
 var K='gdpPixPct',TTL=300000,P=null;
+function limpa(h){return String(h||'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<link\b[^>]*>/gi,'')}
 function ler(root){var cs=root.querySelectorAll('.js-info-payment-method-container'),i,t,m;if(!cs.length)return null;for(i=0;i<cs.length;i++){t=(cs[i].textContent||'').replace(/\s+/g,' ');m=t.match(/(\d+(?:[.,]\d+)?)\s*%\s*de\s*desconto\s*pagando\s*com\s*pix/i);if(m)return parseFloat(m[1].replace(',','.'))}return 0}
 function cache(){try{var o=JSON.parse(sessionStorage.getItem(K));if(o&&Date.now()-o.t<TTL)return o.p}catch(e){}return null}
 function salva(p){try{sessionStorage.setItem(K,JSON.stringify({p:p,t:Date.now()}))}catch(e){}}
 function links(){var u=[],o=[],as=document.querySelectorAll('a[href*="/produtos/"]'),i,h,n;for(i=0;i<as.length;i++){h=as[i].pathname;if(/^\/produtos\/[^\/]+/.test(h)&&u.indexOf(h)<0)u.push(h)}
 n=u.length;if(n<=5)return u;[0,Math.floor(n/4),Math.floor(n/2),Math.floor(3*n/4),n-1].forEach(function(k){if(o.indexOf(u[k])<0)o.push(u[k])});return o}
 function votar(a){var c={},b=null,i,k;for(i=0;i<a.length;i++){k=String(a[i]);c[k]=(c[k]||0)+1}for(k in c){if(b===null||c[k]>c[b]||(c[k]===c[b]&&parseFloat(k)<parseFloat(b)))b=k}return b===null?null:parseFloat(b)}
-function daBusca(){return fetch('/search/?q=a&gdp='+Date.now(),{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.text()}).then(function(h){var d=new DOMParser().parseFromString(h,'text/html'),es=d.querySelectorAll('[data-variants]'),vs=[],i,v,pr,pd,k;
+function daBusca(){return fetch('/search/?q=a&gdp='+Date.now(),{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.text()}).then(function(h){var d=new DOMParser().parseFromString(limpa(h),'text/html'),es=d.querySelectorAll('[data-variants]'),vs=[],i,v,pr,pd,k;
 for(i=0;i<es.length;i++){try{v=JSON.parse(es[i].getAttribute('data-variants'))[0];pr=v.price_number_raw/100;pd=parseFloat(String(v.price_with_payment_discount_short).replace(/[^\d,]/g,'').replace(',','.'));if(pr>0&&pd>0&&pd<=pr){k=Math.round((1-pd/pr)*1000)/10;if(Math.abs(k-Math.round(k))<0.15)k=Math.round(k);vs.push(k)}}catch(e){}}
 return vs.length>=3?votar(vs):null}).catch(function(){return null})}
-function dosProdutos(ls,cb){if(!ls.length)return;Promise.all(ls.map(function(u){return fetch(u,{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.text()}).then(function(h){return ler(new DOMParser().parseFromString(h,'text/html'))}).catch(function(){return null})})).then(function(vs){vs=vs.filter(function(v){return v!==null});var p=votar(vs);if(p!==null){salva(p);cb(p)}})}
+function dosProdutos(ls,cb){if(!ls.length)return;Promise.all(ls.map(function(u){return fetch(u,{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.text()}).then(function(h){return ler(new DOMParser().parseFromString(limpa(h),'text/html'))}).catch(function(){return null})})).then(function(vs){vs=vs.filter(function(v){return v!==null});var p=votar(vs);if(p!==null){salva(p);cb(p)}})}
 function buscar(ls,cb){daBusca().then(function(p){if(p!==null){salva(p);cb(p)}else dosProdutos(ls,cb)})}
 var LF=0;
 function obter(cb,force){var c=cache(),d=c===null?ler(document):null;if(c!==null)cb(c);else if(d!==null)cb(d);if(!force&&Date.now()-LF<15000)return;LF=Date.now();buscar(links(),cb)}
