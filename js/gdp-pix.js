@@ -1,11 +1,11 @@
-/* PIX v4 (leitura sem estilos, corrige Firefox) | v3: o % vem da busca da loja (sem cache), que reflete o painel na hora */
+/* PIX v5 (sem valor provisório nem guardado: só mostra o % lido do painel nesta página) | v4 Firefox | v3: o % vem da busca da loja (sem cache), que reflete o painel na hora */
 (function(){
 if(window.__gdpPixDyn)return;window.__gdpPixDyn=1;
 var K='gdpPixPct',TTL=300000,P=null;
 function limpa(h){return String(h||'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<link\b[^>]*>/gi,'')}
 function ler(root){var cs=root.querySelectorAll('.js-info-payment-method-container'),i,t,m;if(!cs.length)return null;for(i=0;i<cs.length;i++){t=(cs[i].textContent||'').replace(/\s+/g,' ');m=t.match(/(\d+(?:[.,]\d+)?)\s*%\s*de\s*desconto\s*pagando\s*com\s*pix/i);if(m)return parseFloat(m[1].replace(',','.'))}return 0}
 function cache(){try{var o=JSON.parse(sessionStorage.getItem(K));if(o&&Date.now()-o.t<TTL)return o.p}catch(e){}return null}
-function salva(p){try{sessionStorage.setItem(K,JSON.stringify({p:p,t:Date.now()}))}catch(e){}}
+function salva(p){window.__gdpPixLive=p;try{sessionStorage.setItem(K,JSON.stringify({p:p,t:Date.now()}))}catch(e){}}
 function links(){var u=[],o=[],as=document.querySelectorAll('a[href*="/produtos/"]'),i,h,n;for(i=0;i<as.length;i++){h=as[i].pathname;if(/^\/produtos\/[^\/]+/.test(h)&&u.indexOf(h)<0)u.push(h)}
 n=u.length;if(n<=5)return u;[0,Math.floor(n/4),Math.floor(n/2),Math.floor(3*n/4),n-1].forEach(function(k){if(o.indexOf(u[k])<0)o.push(u[k])});return o}
 function votar(a){var c={},b=null,i,k;for(i=0;i<a.length;i++){k=String(a[i]);c[k]=(c[k]||0)+1}for(k in c){if(b===null||c[k]>c[b]||(c[k]===c[b]&&parseFloat(k)<parseFloat(b)))b=k}return b===null?null:parseFloat(b)}
@@ -15,7 +15,7 @@ return vs.length>=3?votar(vs):null}).catch(function(){return null})}
 function dosProdutos(ls,cb){if(!ls.length)return;Promise.all(ls.map(function(u){return fetch(u,{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.text()}).then(function(h){return ler(new DOMParser().parseFromString(limpa(h),'text/html'))}).catch(function(){return null})})).then(function(vs){vs=vs.filter(function(v){return v!==null});var p=votar(vs);if(p!==null){salva(p);cb(p)}})}
 function buscar(ls,cb){daBusca().then(function(p){if(p!==null){salva(p);cb(p)}else dosProdutos(ls,cb)})}
 var LF=0;
-function obter(cb,force){var c=cache(),d=c===null?ler(document):null;if(c!==null)cb(c);else if(d!==null)cb(d);if(!force&&Date.now()-LF<15000)return;LF=Date.now();buscar(links(),cb)}
+function obter(cb,force){if(!force&&Date.now()-LF<15000){if(P!==null)cb(P);return}LF=Date.now();buscar(links(),cb)}
 function aplica(p){var els=document.querySelectorAll('.gdp-pix'),i,px,pe,n,val,s,card,nat;
 for(i=0;i<els.length;i++){px=els[i];card=px.closest('.js-item-product');
 nat=card&&[].some.call(card.querySelectorAll('*'),function(e){return !e.children.length&&!px.contains(e)&&/com\s*pix/i.test(e.textContent)});
@@ -37,7 +37,8 @@ var a=document.querySelectorAll('.js-product-discount-container');for(i=0;i<a.le
 var b=document.querySelectorAll('.js-modal-tab-discount strong');for(i=0;i<b.length;i++){if(/^\s*\d+(?:[.,]\d+)?\s*%\s*OFF\s*$/i.test(b[i].textContent)){x=t+'% OFF';if(b[i].textContent.trim()!==x)b[i].textContent=x}}}
 function tudo(p){aplica(p);try{nativo(p)}catch(e){}try{extras(p)}catch(e){}}
 function run(force){try{obter(function(p){P=p;tudo(p)},force)}catch(e){}}
-var tm;try{new MutationObserver(function(){clearTimeout(tm);tm=setTimeout(function(){try{if(P!==null)tudo(P);else run()}catch(e){}},80)}).observe(document.body,{childList:true,subtree:true,characterData:true})}catch(e){}
+function principal(p){if(!(p>0))return;var pe=document.querySelector('#price_display[data-product-price]');if(!pe)return;var px=[].filter.call(document.querySelectorAll('.gdp-pix'),function(x){return !x.closest('.js-item-product')})[0];if(!px)return;var n=parseFloat(pe.getAttribute('data-product-price'));if(!isFinite(n)||n<=0)return;var val=brl(n*(100-p)/100),st=px.querySelector('strong');if(st){if(st.textContent.trim()!==val)st.textContent=val}else if(px.textContent.replace(/\s+/g,' ').trim()!=='PIX '+val)px.textContent='PIX '+val;if(px.getAttribute('data-gdp-off')){px.style.display='';px.removeAttribute('data-gdp-off')}}
+var tm;try{new MutationObserver(function(){if(P!==null){try{principal(P)}catch(e){}}clearTimeout(tm);tm=setTimeout(function(){try{if(P!==null)tudo(P);else run()}catch(e){}},80)}).observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-product-price']})}catch(e){}
 document.addEventListener('visibilitychange',function(){if(!document.hidden)run(true)});
 window.addEventListener('focus',function(){run(true)});
 document.addEventListener('change',function(){setTimeout(run,300)},true);
