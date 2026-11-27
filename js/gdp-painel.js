@@ -1,4 +1,4 @@
-/* GALERIE DU PARFUM · CAMADA PAINEL v2
+/* GALERIE DU PARFUM · CAMADA PAINEL v3 (leitura sem estilos, corrige Firefox)
    Menu, submenus, aromas, rodapé, redes sociais, WhatsApp, logo e ano seguem o painel da Nuvemshop.
    O design continua o do código; só os textos, links e itens vêm do painel. */
 (function(){
@@ -7,6 +7,7 @@ var SK='gdpPainelN',TTL=300000,N0=null,reps=0;
 var KEEP=/^\/(account|cart|checkout|contato|search|busca|galerie-cfg)/;
 var SOC={'instagram.com':'instagram','facebook.com':'facebook','fb.com':'facebook','tiktok.com':'tiktok','youtube.com':'youtube','youtu.be':'youtube','pinterest.com':'pinterest','twitter.com':'twitter','x.com':'twitter','linkedin.com':'linkedin','wa.me':'wa','api.whatsapp.com':'wa','whatsapp.com':'wa'};
 function stem(t){return (t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim().replace(/s$/,'')}
+function limpa(h){return String(h||'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<link\b[^>]*>/gi,'')}
 function clean(t){return (t||'').replace(/\s+/g,' ').trim()}
 function pth(h){try{var u=new URL(h,location.origin);if(u.hostname.replace(/^www\./,'')!==location.hostname.replace(/^www\./,''))return null;return u.pathname}catch(e){return null}}
 function hst(h){try{return new URL(h,location.origin).hostname.replace(/^www\./,'')}catch(e){return ''}}
@@ -29,7 +30,7 @@ for(j=0;j<sa.length;j++){h=sa[j].getAttribute('href');k=SOC[hst(h)];if(k&&k!=='w
 var w=d.querySelector('a[href*="wa.me"],a[href*="api.whatsapp.com"]');if(w)N.wa=w.getAttribute('href');
 return N}
 function dados(cb){var c;try{c=JSON.parse(sessionStorage.getItem(SK));if(c&&Date.now()-c.t<TTL)return cb(c.N)}catch(e){}
-fetch('/',{credentials:'same-origin'}).then(function(r){return r.text()}).then(function(h){var N=parse(new DOMParser().parseFromString(h,'text/html'));try{sessionStorage.setItem(SK,JSON.stringify({N:N,t:Date.now()}))}catch(e){}cb(N)}).catch(function(){})}
+fetch('/',{credentials:'same-origin'}).then(function(r){return r.text()}).then(function(h){var N=parse(new DOMParser().parseFromString(limpa(h),'text/html'));try{sessionStorage.setItem(SK,JSON.stringify({N:N,t:Date.now()}))}catch(e){}cb(N)}).catch(function(){})}
 
 /* ---------- MENU: nível principal (topo e celular) ---------- */
 function topos(N){var nav=N.nav;if(!nav)return;
@@ -100,7 +101,7 @@ document.addEventListener('click',function(e){var a=e.target.closest&&e.target.c
 /* ---------- BARRA: texto vem da página interna /galerie-cfg-barra/ (use *palavra* para destacar o cupom) ---------- */
 function barra(){var mq=document.querySelector('#gdp-marquee-wrap .gdp-mq');if(!mq)return;
 fetch('/galerie-cfg-barra/',{credentials:'same-origin'}).then(function(r){if(r.status!==200)return null;return r.text()}).then(function(t){if(!t)return;
-var d=new DOMParser().parseFromString(t,'text/html'),el=d.querySelector('.user-content,[data-store="page-content"],.page-content,main'),x=el?clean(el.textContent):'';
+var d=new DOMParser().parseFromString(limpa(t),'text/html'),el=d.querySelector('.user-content,[data-store="page-content"],.page-content,main'),x=el?clean(el.textContent):'';
 if(!x||x.length>200)return;
 var h=x.replace(/[<>&]/g,'').replace(/\*([^*]+)\*/g,'<span class="gdp-code">$1</span>'),sep='&nbsp;&nbsp;&nbsp;✦&nbsp;&nbsp;&nbsp;',out='',k;
 for(k=0;k<6;k++)out+=h+sep;if(mq.getAttribute('data-gdp-bar')!==out){mq.innerHTML=out;mq.setAttribute('data-gdp-bar',out)}}).catch(function(){})}
